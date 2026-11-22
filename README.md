@@ -29,7 +29,7 @@
 | 🕸️ 知识图谱关系召回 | Neo4j 实体页 + 有向关系边主存、别名归一、wikilink / backlink、Cypher 2 跳扩展、最短路径解释 | ✅ 已实现 |
 | 📊 评测中台 | 48 条 / 11 类，Hit@5 100%、MRR 0.948，A/B、门禁、LLM 裁判、复盘导出 | ✅ 已实现 |
 | ⏱️ 运营自动化 | 3 个定时任务、运行历史、Agent 触发、Excel 导出 | ✅ 已实现 |
-| 🛒 渠道集成 | Shopee Open API v2 / Shopify Admin API 双平台适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | ✅ 已实现（默认虚构数据） |
+| 🛒 渠道集成 | Shopee Open API v2 / Shopify Admin API 双平台适配层，`local / mock / sandbox / live` 四模式，行级租户隔离 + 快照回放，故障降级并标注来源 | ✅ 已实现（默认虚构数据） |
 | 🧪 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | ✅ 已实现（可选） |
 | 🛡️ 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | ✅ 已实现 |
 
@@ -44,6 +44,8 @@
 
 - **业务映射**：平台原生订单 / line item / variant 结构统一映射为内部订单与 SKU 契约，金额、币种、时区（UTC / UTC+8）在适配层收敛。
 - **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
+- **多租户隔离**：请求进入时解析 JWT 的 `tenant` claim 写入 ContextVar；继承 `TenantScoped` 的模型自动获得 `tenant_id`，`do_orm_execute` 给所有 SELECT 追加租户条件，`before_flush` 自动补值——业务代码不用手写 `where tenant_id`，漏写也不会串租户；快照表以 `(tenant_id, platform, entity, external_id)` 作为组合唯一键。
+- **结果落库**：订单 / 库存 / 商品查询成功后写穿 `channel_snapshots`（保留平台原始结构 + `fetched_at`），按租户 + 平台 + 实体 + 外部 ID 覆盖更新；渠道故障时先回放最近快照（`source=channel-cache`），再回落本地库（`local-fallback`），响应始终带 `source` 与 `tenant_id`，来源一眼可辨。
 - **联调边界**：Shopify 基于 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证。
 
 ## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
