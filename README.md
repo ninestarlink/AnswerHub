@@ -46,6 +46,8 @@
 - **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
 - **多租户隔离**：请求进入时解析 JWT 的 `tenant` claim 写入 ContextVar；继承 `TenantScoped` 的模型自动获得 `tenant_id`，`do_orm_execute` 给所有 SELECT 追加租户条件，`before_flush` 自动补值——业务代码不用手写 `where tenant_id`，漏写也不会串租户；快照表以 `(tenant_id, platform, entity, external_id)` 作为组合唯一键。
 - **结果落库**：订单 / 库存 / 商品查询成功后写穿 `channel_snapshots`（保留平台原始结构 + `fetched_at`），按租户 + 平台 + 实体 + 外部 ID 覆盖更新；渠道故障时先回放最近快照（`source=channel-cache`），再回落本地库（`local-fallback`），响应始终带 `source` 与 `tenant_id`，来源一眼可辨。
+- **场景落地**：同一层适配器同时服务 `/api/channels/*` 接口、前端「渠道集成」页与 Agent 工具（`channel_stock_check` / `channel_order_lookup`），页面和工具卡片都显示 `source` 与降级原因。
+- **验证方式**：`tests/test_channels.py` 覆盖 v2 签名固定向量、订单 / 库存映射、Shopify 状态组合与时区换算；`tests/test_tenancy.py` 覆盖跨租户不可见、自动补 `tenant_id` 与显式跨租户查询。
 - **联调边界**：Shopify 基于 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证。
 
 ## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
