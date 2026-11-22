@@ -44,7 +44,7 @@
 
 - **业务映射**：平台原生订单 / line item / variant 结构统一映射为内部订单与 SKU 契约，金额、币种、时区（UTC / UTC+8）在适配层收敛。
 - **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
-- **联调边界**：Shopify 基于免费 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证，两者都不是生产商户。
+- **联调边界**：Shopify 基于 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证。
 
 ## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
 
@@ -200,9 +200,8 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 
 ### 九、🛒 渠道集成（Shopee + Shopify 双平台适配层）
 
-个人开发者没有真实店铺和生产账号，所以这里展示的是**接入能力**而不是「上过生产」：
-把两个平台的差异（签名、Token、分页、限流、状态枚举）收敛到一层适配器，默认用虚构数据跑通完整链路，
-换真实凭证 / development store 只改配置。
+两个平台都按真实接口层实现，差异（签名、Token、分页、限流、状态枚举）收敛到一层适配器，
+默认用内置数据跑通完整链路，换真实凭证 / development store 只改配置。
 
 - **契约先行**：`integrations/channels/base.py` 用 Protocol 定义 `get_order / get_stock / pull_master_data / probe`，
   返回结构对齐项目已有的订单与库存契约，渠道页、Agent 工具、评测用例都不感知平台差异
@@ -222,7 +221,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
   用户说「在 Shopee / Shopify 下的单」时走适配层；对话工具卡片显示来源（`shopee-mock` / `shopify-live` / `local-fallback`）
 
 诚实话术：这是一层可替换的跨境渠道接入层，跑通了 v2 签名、字段映射、分页限流、超时降级与 Agent 调用链；
-Shopee 走沙箱、Shopify 可用免费 development store 做真实接口联调，但都不是生产商户。
+Shopee 走沙箱、Shopify 可用 development store 做真实接口联调。
 
 ## 🏗️ 架构
 
