@@ -29,7 +29,7 @@
 | 🕸️ 知识图谱关系召回 | Neo4j 实体页 + 有向关系边主存、别名归一、wikilink / backlink、Cypher 2 跳扩展、最短路径解释 | ✅ 已实现 |
 | 📊 评测中台 | 48 条 / 11 类，Hit@5 100%、MRR 0.948，A/B、门禁、LLM 裁判、复盘导出 | ✅ 已实现 |
 | ⏱️ 运营自动化 | 3 个定时任务、运行历史、Agent 触发、Excel 导出 | ✅ 已实现 |
-| 🛒 渠道集成 | Shopee Open API v2 / Shopify Admin API 只读适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | ✅ 已实现（默认虚构数据） |
+| 🛒 渠道集成 | Shopee Open API v2 / Shopify Admin API 双平台适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | ✅ 已实现（默认虚构数据） |
 | 🧪 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | ✅ 已实现（可选） |
 | 🛡️ 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | ✅ 已实现 |
 
@@ -44,7 +44,7 @@
 
 - **业务映射**：平台原生订单 / line item / variant 结构统一映射为内部订单与 SKU 契约，金额、币种、时区（UTC / UTC+8）在适配层收敛。
 - **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
-- **联调边界**：Shopify 基于免费 development store 完成真实只读联调；Shopee 使用沙箱与完整签名链路验证，两者都不是生产商户。
+- **联调边界**：Shopify 基于免费 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证，两者都不是生产商户。
 
 ## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
 
@@ -198,7 +198,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **Excel 报表**：`GET /api/admin/automation/export` 用 openpyxl 导出运行明细与各任务最近一次摘要，供周报归档
 - **只读优先**：巡检类任务只统计不写业务表，写操作仍走知识库重建或 Agent 审批链路
 
-### 九、🛒 渠道集成（Shopee + Shopify 只读适配层）
+### 九、🛒 渠道集成（Shopee + Shopify 双平台适配层）
 
 个人开发者没有真实店铺和生产账号，所以这里展示的是**接入能力**而不是「上过生产」：
 把两个平台的差异（签名、Token、分页、限流、状态枚举）收敛到一层适配器，默认用虚构数据跑通完整链路，
@@ -216,13 +216,13 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **可降级**：`CHANNEL_MODE=local` 绕过渠道并标注 `source=local`；`mock` 用内置虚构数据（默认，无账号无网络）；
   `sandbox` / `live` 走真实接口。超时 / 鉴权失败 / 5xx 统一抛 `ChannelUnavailable`，
   网关自动回落本地 MySQL 并标注 `source=local-fallback`，不把兜底数据伪装成平台结果
-- **只读演示页**：前端「渠道集成」页把两个平台的模式徽章、连通性与探测耗时、订单 / 库存 / 商品查询放在同一屏，
+- **渠道演示页**：前端「渠道集成」页把两个平台的模式徽章、连通性与探测耗时、订单 / 库存 / 商品查询放在同一屏，
   每条结果带来源徽章与降级原因，并展示「平台原生 → 内部字段」的映射表
 - **进入 Agent**：`channel_stock_check(platform, sku)` 与 `channel_order_lookup(platform, order_no)` 两个工具，
   用户说「在 Shopee / Shopify 下的单」时走适配层；对话工具卡片显示来源（`shopee-mock` / `shopify-live` / `local-fallback`）
 
 诚实话术：这是一层可替换的跨境渠道接入层，跑通了 v2 签名、字段映射、分页限流、超时降级与 Agent 调用链；
-Shopee 走沙箱、Shopify 可用免费 development store 做真实只读联调，但都不是生产商户。
+Shopee 走沙箱、Shopify 可用免费 development store 做真实接口联调，但都不是生产商户。
 
 ## 🏗️ 架构
 
@@ -413,7 +413,7 @@ python scripts/eval_retrieval.py --list     # 打印知识库文档清单
 ## ❓ FAQ
 
 **Q：需要真实的 Shopee / Shopify 店铺吗？**  
-不需要。默认 `CHANNEL_MODE=mock`，内置虚构的订单、库存、商品数据，无账号、无网络即可跑通全链路；有 development store 时只改环境变量即可切到真实只读接口。
+不需要。默认 `CHANNEL_MODE=mock`，内置虚构的订单、库存、商品数据，无账号、无网络即可跑通全链路；有 development store 时只改环境变量即可切到真实平台接口。
 
 **Q：没有大模型 API Key 能跑吗？**  
 能启动，但对话与向量检索会降级。至少配置 `SILICONFLOW_API_KEY`；未配置时检索只能走 BM25，回答质量会明显下降。
