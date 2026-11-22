@@ -24,6 +24,19 @@
 | 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | 已实现（可选） |
 | 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | 已实现 |
 
+## 电商平台接入经验（Shopee + Shopify）
+
+两个平台落在同一套 `ChannelAdapter` 契约上，业务细节按平台分别处理：
+
+| 平台 | 业务能力 | 关键实现 |
+| --- | --- | --- |
+| **Shopee** | 订单详情、商品 / 型号、实时库存 | Open API v2；`partner_id + path + timestamp + access_token + shop_id` 的 HMAC-SHA256 签名；access_token 刷新；订单状态机 `UNPAID → READY_TO_SHIP → SHIPPED → COMPLETED / CANCELLED` 映射 |
+| **Shopify** | 订单、商品 variant、库存 | Admin REST；`X-Shopify-Access-Token`；`financial_status × fulfillment_status` 组合映射；`Link` header 分页；429 读取 `Retry-After` 重试 |
+
+- **业务映射**：平台原生订单 / line item / variant 结构统一映射为内部订单与 SKU 契约，金额、币种、时区（UTC / UTC+8）在适配层收敛。
+- **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
+- **联调边界**：Shopify 基于免费 development store 完成真实只读联调；Shopee 使用沙箱与完整签名链路验证，两者都不是生产商户。
+
 ## 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
 
 从输入框到带出处的答案，一次请求会走完 7 个环节，覆盖 **RAG 混合检索、Neo4j 图谱关系扩展、Function Calling 工具调用、HITL 审批与运营自动化**。检索是主干，图谱与工具是两条增强，任一环节降级都不影响主链路返回：
