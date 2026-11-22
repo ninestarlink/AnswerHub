@@ -1,32 +1,53 @@
-# AnswerHub-AI中台
+# 🚀 AnswerHub-AI中台
 
-**可验证、可回放、可评测的客服 Agent 中台**：面向电商导购、订单物流与企业制度问答。RAG 结论精确到章节 / 页码，订单与库存对接 Shopee / Shopify，写操作先人工审批，整轮会话可回放，检索策略用金标集持续回归。
+> **可验证、可回放、可评测的客服 Agent 中台**：面向电商导购、订单物流与企业制度问答。RAG 结论精确到章节 / 页码，订单与库存对接 Shopee / Shopify，写操作先人工审批，整轮会话可回放，检索策略用金标集持续回归。
 
-渠道侧已接入 **Shopee Open API v2** 与 **Shopify Admin API**：统一订单 / 库存 / 商品模型，处理 HMAC-SHA256 签名与 Token 刷新、订单状态与 SKU 映射、分页与 429 限流重试；支持 `local / mock / sandbox / live` 四模式，渠道故障时先按租户回放最近快照，再降级到本地库。
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-0.162-009688" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Next.js-14-000000" alt="Next.js">
+  <img src="https://img.shields.io/badge/LangGraph-1.2-1C3C3C" alt="LangGraph">
+  <img src="https://img.shields.io/badge/pgvector-0.8-336791" alt="pgvector">
+  <img src="https://img.shields.io/badge/Neo4j-5.26-4581C3" alt="Neo4j">
+  <img src="https://img.shields.io/badge/Shopee%20%2B%20Shopify-Adapter-0B7285" alt="Channels">
+  <img src="https://img.shields.io/badge/Tests-24%20passed-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/Hit%405-100%25-brightgreen" alt="Eval">
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License">
+</p>
 
-核心链路：**pgvector + BM25 混合检索 → Neo4j 图谱 2 跳关系召回 → rerank → 章节级引用 → LangGraph Agent 工具调用（9 个）→ HITL 审批 → 轨迹落库**。工程侧包含 SSE 流式对话、JWT + RBAC 鉴权、双平台渠道适配层与超时降级，并用 **48 条回归评测（Hit@5 100% / MRR 0.948）** 量化检索效果。
+**快速导航**：[🚀 快速开始](#-快速开始) · [✨ 核心能力](#-核心能力) · [🏗️ 架构](#-架构) · [📊 评测](#-评测中台让回答变好有数字依据) · [🔌 API](#-api-概览)
 
-> 个人学习项目：店铺、订单、制度数据均为虚构，不涉及真实企业或商户；默认 `CHANNEL_MODE=mock`，无账号、无网络即可跑通全链路。
+## 🔥 为什么值得看
 
-![stack](https://img.shields.io/badge/React-18-149ECA) ![stack](https://img.shields.io/badge/Next.js-14-000000) ![stack](https://img.shields.io/badge/FastAPI-0.162-009688) ![stack](https://img.shields.io/badge/LangGraph-1.2-1C3C3C) ![stack](https://img.shields.io/badge/Function%20Calling-1C3C3C) ![stack](https://img.shields.io/badge/HITL-Approval-6E4AFF) ![stack](https://img.shields.io/badge/Shopee%20%2B%20Shopify-Adapter-0B7285) ![stack](https://img.shields.io/badge/pgvector-0.8-336791)
+不是「把文档丢进去就能问答」的 Demo，而是把客服回答做成一条可验证的工程链路：
 
-## 能力地图
+| 常见问题 | AnswerHub 的做法 |
+| --- | --- |
+| 😵 **回答不可追溯** | 引用精确到「文档 / 编号 / 版本 / 章节 / 页码」 |
+| 🧰 **只会说不会办** | 9 个业务工具；订单、库存对接 Shopee / Shopify |
+| 🛂 **写操作不可控** | LangGraph `interrupt()` 暂停，人工批准后 `resume` |
+| 📉 **改完不知道有没有变好** | 48 条金标回归，Hit@5 100%、MRR 0.948 |
+| 🔌 **渠道故障就报错** | 快照回放 → 本地库降级，接口标注 `source` |
+
+> 📌 **个人学习项目**：店铺、订单、制度数据均为虚构，不涉及真实企业或商户；默认 `CHANNEL_MODE=mock`，无账号、无网络即可跑通全链路。
+
+## ✨ 核心能力
 
 | 模块 | 现在有什么 | 状态 |
 | --- | --- | --- |
-| 对话编排 | LangGraph `route → agent ⇄ tools → approval → resume`，SSE 六类事件帧 | 已实现 |
-| 混合检索 | pgvector HNSW + 中文 BM25 + RRF + rerank，父子切片，429 时降级 BM25-only | 已实现 |
-| 引用溯源 | 回答标注「文档名 / 编号 / 版本 / 章节 / 页码」 | 已实现 |
-| 业务工具 | 商品检索、商品详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发 | 9 个 |
-| 写操作审批 | `interrupt()` 暂停 → 前端批准 / 拒绝 → `resume` 恢复 | 已实现 |
-| 知识图谱关系召回 | Neo4j 实体页 + 有向关系边主存、别名归一、wikilink / backlink、Cypher 2 跳扩展、最短路径解释 | 已实现 |
-| 评测中台 | 48 条 / 11 类，Hit@5 100%、MRR 0.948，A/B、门禁、LLM 裁判、复盘导出 | 已实现 |
-| 运营自动化 | 3 个定时任务、运行历史、Agent 触发、Excel 导出 | 已实现 |
-| 渠道集成 | Shopee Open API v2 / Shopify Admin API 只读适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | 已实现（默认虚构数据） |
-| 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | 已实现（可选） |
-| 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | 已实现 |
+| 💬 对话编排 | LangGraph `route → agent ⇄ tools → approval → resume`，SSE 六类事件帧 | ✅ 已实现 |
+| 🔍 混合检索 | pgvector HNSW + 中文 BM25 + RRF + rerank，父子切片，429 时降级 BM25-only | ✅ 已实现 |
+| 📎 引用溯源 | 回答标注「文档名 / 编号 / 版本 / 章节 / 页码」 | ✅ 已实现 |
+| 🧰 业务工具 | 商品检索、商品详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发 | 9 个 |
+| 🛂 写操作审批 | `interrupt()` 暂停 → 前端批准 / 拒绝 → `resume` 恢复 | ✅ 已实现 |
+| 🕸️ 知识图谱关系召回 | Neo4j 实体页 + 有向关系边主存、别名归一、wikilink / backlink、Cypher 2 跳扩展、最短路径解释 | ✅ 已实现 |
+| 📊 评测中台 | 48 条 / 11 类，Hit@5 100%、MRR 0.948，A/B、门禁、LLM 裁判、复盘导出 | ✅ 已实现 |
+| ⏱️ 运营自动化 | 3 个定时任务、运行历史、Agent 触发、Excel 导出 | ✅ 已实现 |
+| 🛒 渠道集成 | Shopee Open API v2 / Shopify Admin API 只读适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | ✅ 已实现（默认虚构数据） |
+| 🧪 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | ✅ 已实现（可选） |
+| 🛡️ 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | ✅ 已实现 |
 
-## 电商平台接入经验（Shopee + Shopify）
+## 🛒 电商平台接入经验（Shopee + Shopify）
 
 两个平台落在同一套 `ChannelAdapter` 契约上，业务细节按平台分别处理：
 
@@ -39,7 +60,7 @@
 - **稳定性**：`local / mock / sandbox / live` 四模式，单平台可独立切换；超时、鉴权失败等故障自动回落本地库，并在接口与工具卡片标注 `source`，不把兜底数据伪装成平台结果。
 - **联调边界**：Shopify 基于免费 development store 完成真实只读联调；Shopee 使用沙箱与完整签名链路验证，两者都不是生产商户。
 
-## 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
+## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
 
 从输入框到带出处的答案，一次请求会走完 7 个环节，覆盖 **RAG 混合检索、Neo4j 图谱关系扩展、Function Calling 工具调用、HITL 审批与运营自动化**。检索是主干，图谱与工具是两条增强，任一环节降级都不影响主链路返回：
 
@@ -53,7 +74,7 @@
 
 > 关系扩展是可选增强：`WIKI_ENABLED=false` 时，向量 + BM25 + RRF + rerank 照常工作；Neo4j 不可用时自动回落 pg 副本。前端「知识网络」页用于观察实体页、出边 / 入边与两跳路径，不影响对话入口。
 
-## 评测中台：让「回答变好」有数字依据
+## 📊 评测中台：让「回答变好」有数字依据
 
 RAG 项目常见的问题是能问答、能引用，但说不清改完提示词、切片或 rerank 参数之后**到底有没有变好**。这里补了一层可重复的检索评测：
 
@@ -91,7 +112,7 @@ cd backend
 $env:PYTHONPATH="."; python scripts/seed_eval.py --run
 ```
 
-## 这个项目解决什么问题
+## 🎯 这个项目解决什么问题
 
 企业做客服智能化，常见做法是接一个开源问答平台，把文档丢进去，然后被三个问题卡住：
 
@@ -101,9 +122,9 @@ $env:PYTHONPATH="."; python scripts/seed_eval.py --run
 
 AnswerHub 针对这三点做了完整闭环：**引用到章节与页码 → 工具调用 → 写操作人工审批 → 全链路轨迹可查**。
 
-## 功能一览
+## ✨ 功能一览
 
-### 一、RAG 检索
+### 一、🔍 RAG 检索
 
 - **多格式解析**：PDF / DOCX / XLSX / Markdown / TXT
 - **父子切片**：父块保留完整章节上下文，子块用于向量召回，命中后回溯父块，避免「一句半句」式引用
@@ -111,21 +132,21 @@ AnswerHub 针对这三点做了完整闭环：**引用到章节与页码 → 工
 - **引用溯源**：回答末尾标注「文档名｜文档编号｜版本｜章节｜页码」，前端来源卡片只展示答案真正引用到的文档
 - **降级策略**：模型额度 429 时熔断 300 秒并自动降级为 BM25-only，前端明确提示「本轮为降级检索」，不假装正常
 
-### 二、Agent 编排（LangGraph）
+### 二、🤖 Agent 编排（LangGraph）
 
 - 意图路由：先判断「查知识 / 调工具 / 直答」，再决定是否进工具循环
 - 9 个工具：商品检索、商品详情、渠道库存（Shopee / Shopify）、平台订单、本地订单查询、店铺政策、优惠券、创建升级工单、自动化任务触发
 - **实体归一**：问题里的商品名 / 订单号先做一次确定性解析，把真实 `product_id` 写进约束，避免模型瞎猜 ID
 - **Agent workflow**：`route → agent ⇄ tools → approval interrupt → resume` 负责单次会话内的编排；它不是 Temporal / Camunda 那种跨服务、长事务的工作流引擎
 
-### 三、人工审批（HITL）
+### 三、🛂 人工审批（HITL）
 
 - 写操作（`create_escalation_ticket`）触发 LangGraph `interrupt()`，图停在审批节点
 - 前端弹出审批卡片：动作、参数、原因一目了然，可批准 / 拒绝
 - 批准 → 继续执行工具；拒绝 → 注入一条 `ToolMessage`，模型改走自助方案
 - 审批状态由 checkpointer 持有，通过 `POST /api/chat/resume` 恢复，SSE 流不中断体验
 
-### 四、代码执行沙箱（可选，需要本机 Docker）
+### 四、🧪 代码执行沙箱（可选，需要本机 Docker）
 
 AI 会写代码是一回事，敢让它在本机跑是另一回事。这里给了一个最小但真实的隔离执行环境：每种语言常驻一个预热容器，代码通过 `exec` 注入，跑完容器保留复用；超时或异常直接销毁重建。
 
@@ -150,7 +171,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 
 `GET /api/sandbox/status` 返回 Docker 版本、镜像是否就绪、各项限制与当前池状态。首次启动会自动拉起 `python:3.11-alpine`、`node:20-alpine` 并预热；Docker 不可用时接口返回 503，不影响客服主流程。
 
-### 五、可观测与安全
+### 五、🛡️ 可观测与安全
 
 - **对话轨迹**：每轮写入 `chat_trace`（命中数、工具、降级原因、首 Token 延迟、总耗时、Token 用量）
 - **鉴权闭环**：JWT（含 `role` claim）+ bcrypt 密码 + RBAC，管理端与索引重建接口均需 admin
@@ -158,7 +179,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **额度保护**：单会话 10 分钟 30 轮、全站每天 1000 轮，Redis 故障时放行不影响可用性
 - **敏感信息**：`.env`、日志、缓存全部 gitignore；演示数据均为虚构
 
-### 六、评测中台
+### 六、📊 评测中台
 
 - **评测数据集**：`eval_dataset / eval_case / eval_run / eval_result / eval_judgment / eval_case_review` 六张表，48 条用例、11 类场景，电商与企业制度共用同一套检索链路
 - **异步跑批**：后台执行，逐条写入结果；前端轮询 `progress`，可随时切走页面
@@ -172,7 +193,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **报告导出**：CSV 带 BOM（UTF-8），含场景、位次、耗时、复盘状态与 TopK 来源，可直接进 Excel 或周报
 - **可下钻**：每条用例显示期望文档、实际 Top1、首中位次、耗时和完整 TopK 来源，便于 bad case 复盘
 
-### 七、知识图谱关系召回（Neo4j）
+### 七、🕸️ 知识图谱关系召回（Neo4j）
 
 - **实体页而不是纯切片**：商品按 `pXXXX` 独立成页、政策与制度各自成页，页面带摘要、原文摘录、来源文档与别名
 - **别名归一**：文档编号、文件名、口语叫法（「退货政策」「商品知识库」）都指向同一实体，问法不必和文件标题一致
@@ -181,7 +202,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **关系召回**：实体命中 → Neo4j 2 跳扩展 → 取对应原文章节作为额外候选，与原向量 / BM25 候选一起 rerank；关系上下文（实体摘要 + 两跳路径 + 邻居摘要）注入提示词
 - **可运维**：启动后台自检构建，管理端一键重建；Neo4j 不可用时写读自动回落到 pg 副本，关系通道降级但主检索不受影响；「知识网络」页可视化实体、别名、出边与入边
 
-### 八、运营自动化
+### 八、⏱️ 运营自动化
 
 - **代码注册的任务清单**：`kb_sync`（每 10 分钟比对源文件指纹，有变更才触发 ingest）、`nightly_eval`（每天 02:00 跑 48 条检索回归）、`stale_ticket_scan`（每 30 分钟只读巡检超时工单）
 - **进程内调度**：APScheduler 随 FastAPI lifespan 启停，`max_instances=1` + `coalesce`，不引入 Temporal / Airflow 之类的工作流引擎
@@ -191,7 +212,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **Excel 报表**：`GET /api/admin/automation/export` 用 openpyxl 导出运行明细与各任务最近一次摘要，供周报归档
 - **只读优先**：巡检类任务只统计不写业务表，写操作仍走知识库重建或 Agent 审批链路
 
-### 九、渠道集成（Shopee + Shopify 只读适配层）
+### 九、🛒 渠道集成（Shopee + Shopify 只读适配层）
 
 个人开发者没有真实店铺和生产账号，所以这里展示的是**接入能力**而不是「上过生产」：
 把两个平台的差异（签名、Token、分页、限流、状态枚举）收敛到一层适配器，默认用虚构数据跑通完整链路，
@@ -217,7 +238,27 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 诚实话术：这是一层可替换的跨境渠道接入层，跑通了 v2 签名、字段映射、分页限流、超时降级与 Agent 调用链；
 Shopee 走沙箱、Shopify 可用免费 development store 做真实只读联调，但都不是生产商户。
 
-## 架构
+## 🏗️ 架构
+
+```mermaid
+flowchart LR
+  U[🧑 用户] --> W[Next.js 14 工作台]
+  W -->|SSE| A[FastAPI]
+  A --> G[LangGraph Agent]
+  G --> R[RAG 混合检索]
+  R --> P[(pgvector)]
+  R --> B[BM25]
+  R --> N[(Neo4j 图谱)]
+  G --> T[9 个业务工具]
+  T --> C[Shopee / Shopify]
+  T --> M[(MySQL)]
+  T --> K[(Redis 幂等)]
+  A --> E[评测中台]
+  A --> S[代码沙箱]
+```
+
+<details>
+<summary>展开分层架构（ASCII）</summary>
 
 ```text
 ┌─────────────── 浏览器（Next.js 14 / React 18） ─────────────────────────────────────────────────────────────────────────────┐
@@ -242,9 +283,11 @@ Shopee 走沙箱、Shopify 可用免费 development store 做真实只读联调�
                                                               + wiki_pages / wiki_links           实体页 / 关系边 / 最短路径
 ```
 
+</details>
+
 > Neo4j 是关系层主存：实体页与 `RELATED` 关系边写入 `Entity` 节点，关系召回用 Cypher 做 2 跳扩展，`/api/admin/wiki/path` 用 `shortestPath` 解释两个实体为什么相关。pg 的 `wiki_pages / wiki_links` 保留为副本，Neo4j 不可用时自动回落，主检索链路（向量 + BM25 + RRF + rerank）不受影响。
 
-## 目录结构
+## 📁 目录结构
 
 ```text
 .
@@ -273,7 +316,7 @@ Shopee 走沙箱、Shopify 可用免费 development store 做真实只读联调�
 └── start-demo.bat          # Windows 一键启动
 ```
 
-## 快速开始
+## 🚀 快速开始
 
 前置：Docker Desktop、Python 3.11+、Node.js 20+。
 
@@ -306,7 +349,7 @@ Windows 用户也可以直接双击 `start-demo.bat`（需 Node 已在 PATH 中�
 
 首次对话前需要在「知识库」页点一次**重建索引**：文档解析 → 切片 → 向量化 → 写入 pgvector。没有配置 `SILICONFLOW_API_KEY` 时只能走 BM25 检索，回答质量会明显下降。
 
-## 环境变量
+## ⚙️ 环境变量
 
 完整清单见 [backend/.env.example](backend/.env.example)。关键项：
 
@@ -328,7 +371,7 @@ Windows 用户也可以直接双击 `start-demo.bat`（需 Node 已在 PATH 中�
 | `SHOPIFY_SHOP_DOMAIN` / `SHOPIFY_ACCESS_TOKEN` | Shopify 店铺域名与 Admin API Token（`live` 时必填） |
 | `SHOPIFY_API_VERSION` | Admin API 版本，默认 `2024-10` |
 
-## API 概览
+## 🔌 API 概览
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -357,7 +400,7 @@ Windows 用户也可以直接双击 `start-demo.bat`（需 Node 已在 PATH 中�
 
 SSE 事件类型：`status`、`message`、`message_end`、`interrupt`、`error`、`[DONE]`。
 
-## 检索评测
+## 📈 检索评测
 
 ```bash
 cd backend
@@ -367,7 +410,7 @@ python scripts/eval_retrieval.py --list     # 打印知识库文档清单
 
 实测（硅基流动 `bge-m3` 向量 + `bge-reranker-v2-m3` 精排，全量 162 个子切片，21 条用例）：Recall@1 81.0%、Recall@3 100%、Recall@5 100%、MRR 0.905。重排分数分布与智谱不同，阈值按供应商分开配置（`RAG_MIN_SCORE_SILICONFLOW`，默认 0.08）。
 
-## 测试与验收
+## 🧪 测试与验收
 
 - 端到端冒烟脚本：`backend/scripts/smoke_test.py`（鉴权、问答、审批中断与恢复、轨迹落库）
 - 检索评测脚本：`backend/scripts/eval_retrieval.py`（Recall@k / MRR）
@@ -375,12 +418,37 @@ python scripts/eval_retrieval.py --list     # 打印知识库文档清单
 - 实际运行记录与环境信息：[docs/TESTING.md](docs/TESTING.md)
 - CI：GitHub Actions 跑后端编译与导入检查、前端类型检查与生产构建、敏感文件扫描
 
-## 说明
+## ⚠️ 说明
 
 - 本项目所有商品、订单、员工、供应商、制度文档均为**虚构演示数据**，与真实企业无关。
 - 写操作审批是为演示「AI 不越权」设计的最小闭环，接入真实业务时请把审批人身份、审计日志与工单系统打通。
 - 演示环境的口令与端口均为默认值，**上线前请全部替换**。
 
-## License
+## ❓ FAQ
+
+**Q：需要真实的 Shopee / Shopify 店铺吗？**  
+不需要。默认 `CHANNEL_MODE=mock`，内置虚构的订单、库存、商品数据，无账号、无网络即可跑通全链路；有 development store 时只改环境变量即可切到真实只读接口。
+
+**Q：没有大模型 API Key 能跑吗？**  
+能启动，但对话与向量检索会降级。至少配置 `SILICONFLOW_API_KEY`；未配置时检索只能走 BM25，回答质量会明显下降。
+
+**Q：为什么不做微服务？**  
+当前体量下，模块化单体更合适：按 `agent / rag / routers / integrations / services` 分目录、依赖单向，部署只需一套 Compose。拆微服务会引入服务发现、分布式事务、链路追踪等成本，收益很低。
+
+**Q：评测 Hit@5 100% 是不是说明效果很好？**  
+不是。48 条是自建标注样本，用于策略变更前后的回归对比，不代表线上绝对水平；也没有拿它去和任何商业产品做对比。
+
+**Q：数据和截图是真实的吗？**  
+不是。商品、订单、员工、制度文档全部虚构；页面截图仅用于展示交互，不涉及真实企业或个人信息。
+
+## ⭐ 如果这个项目对你有帮助
+
+点个 Star 支持一下，也欢迎提 Issue 交流 RAG / Agent 的工程实现。
+
+<p align="center">
+  <a href="https://github.com/ninestarlink/AnswerHub/stargazers">⭐ Star AnswerHub</a>
+</p>
+
+## 📄 License
 
 [MIT](LICENSE)
