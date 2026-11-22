@@ -44,7 +44,7 @@ export default function LoginPage() {
               <span className="mono-label text-[9px] text-well-muted">管理控制台</span>
             </span>
             <h1 className="mt-4 text-[23px] leading-tight text-well-ink">
-              登录 AnswerHub 智能客服中台
+              登录 AnswerHub-AI中台
             </h1>
             <p className="mt-2 text-[12.5px] leading-relaxed text-well-muted">
               控制台接口已启用 JWT + 角色鉴权，仅管理员可访问监控、数据库与索引重建。

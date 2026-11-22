@@ -1,6 +1,6 @@
-# AnswerHub 智能客服中台
+# AnswerHub-AI中台
 
-> AnswerHub 是一个 **Function Calling + pgvector 混合检索 + Neo4j 知识图谱 + LangGraph Agent** 的客服中台：**回答带出处、写操作先审批、全过程可回放**，覆盖电商导购与企业制度问答。
+> AnswerHub-AI中台 是一个 **Function Calling + pgvector 混合检索 + Neo4j 知识图谱 + LangGraph Agent** 的客服中台：**回答带出处、写操作先审批、全过程可回放**，覆盖电商导购与企业制度问答。
 
 同一套 Agent 运行时、同一条检索链路、同一套鉴权与监控。工作台只有一个输入框——商品、订单、制度问题都能问，系统按语义判断该查文档还是调工具。
 
