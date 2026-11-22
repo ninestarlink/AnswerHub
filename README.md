@@ -1,12 +1,12 @@
-# AnswerY智能客服中台
+# AnswerHub 智能客服中台
 
-> AnswerY = **Answer You**。一个 **Function Calling + pgvector 混合检索 + Neo4j 知识图谱 + LangGraph Agent** 的客服中台：**回答带出处、写操作先审批、全过程可回放**，覆盖电商导购与企业制度问答。
+> AnswerHub 是一个 **Function Calling + pgvector 混合检索 + Neo4j 知识图谱 + LangGraph Agent** 的客服中台：**回答带出处、写操作先审批、全过程可回放**，覆盖电商导购与企业制度问答。
 
 同一套 Agent 运行时、同一条检索链路、同一套鉴权与监控。工作台只有一个输入框——商品、订单、制度问题都能问，系统按语义判断该查文档还是调工具。
 
-现在的主线能力：**混合检索（pgvector + BM25 + RRF）→ Neo4j 图谱关系召回（实体命中 → 2 跳扩展 → 路径解释）→ rerank → 引用到章节页码 → 8 个工具 → 写操作 HITL 审批 → 轨迹落库**；外层配 **48 条回归评测（Hit@5 100% / MRR 0.948）**、**APScheduler 运营自动化** 和 **可替换的 ERP 适配层（内置 Mock ERP）**。关系召回是一路可关的增强通道：`WIKI_ENABLED=false` 时主链路照常工作，Neo4j 不可用时退回 pg 副本并降级为纯检索。
+现在的主线能力：**混合检索（pgvector + BM25 + RRF）→ Neo4j 图谱关系召回（实体命中 → 2 跳扩展 → 路径解释）→ rerank → 引用到章节页码 → 9 个工具 → 写操作 HITL 审批 → 轨迹落库**；外层配 **48 条回归评测（Hit@5 100% / MRR 0.948）**、**APScheduler 运营自动化** 和 **Shopee / Shopify 渠道适配层（默认 Mock，可切沙盒 / 正式 Token）**。关系召回是一路可关的增强通道：`WIKI_ENABLED=false` 时主链路照常工作，Neo4j 不可用时退回 pg 副本并降级为纯检索。
 
-![stack](https://img.shields.io/badge/React-18-149ECA) ![stack](https://img.shields.io/badge/Next.js-14-000000) ![stack](https://img.shields.io/badge/FastAPI-0.162-009688) ![stack](https://img.shields.io/badge/LangGraph-1.2-1C3C3C) ![stack](https://img.shields.io/badge/Function%20Calling-1C3C3C) ![stack](https://img.shields.io/badge/HITL-Approval-6E4AFF) ![stack](https://img.shields.io/badge/ERP-Adapter-0B7285) ![stack](https://img.shields.io/badge/pgvector-0.8-336791)
+![stack](https://img.shields.io/badge/React-18-149ECA) ![stack](https://img.shields.io/badge/Next.js-14-000000) ![stack](https://img.shields.io/badge/FastAPI-0.162-009688) ![stack](https://img.shields.io/badge/LangGraph-1.2-1C3C3C) ![stack](https://img.shields.io/badge/Function%20Calling-1C3C3C) ![stack](https://img.shields.io/badge/HITL-Approval-6E4AFF) ![stack](https://img.shields.io/badge/Shopee%20%2B%20Shopify-Adapter-0B7285) ![stack](https://img.shields.io/badge/pgvector-0.8-336791)
 
 ## 能力地图
 
@@ -15,34 +15,14 @@
 | 对话编排 | LangGraph `route → agent ⇄ tools → approval → resume`，SSE 六类事件帧 | 已实现 |
 | 混合检索 | pgvector HNSW + 中文 BM25 + RRF + rerank，父子切片，429 时降级 BM25-only | 已实现 |
 | 引用溯源 | 回答标注「文档名 / 编号 / 版本 / 章节 / 页码」 | 已实现 |
-| 业务工具 | 商品检索、商品详情、ERP 实时库存、订单、政策、优惠券、工单、自动化触发 | 8 个 |
+| 业务工具 | 商品检索、商品详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发 | 9 个 |
 | 写操作审批 | `interrupt()` 暂停 → 前端批准 / 拒绝 → `resume` 恢复 | 已实现 |
 | 知识图谱关系召回 | Neo4j 实体页 + 有向关系边主存、别名归一、wikilink / backlink、Cypher 2 跳扩展、最短路径解释 | 已实现 |
 | 评测中台 | 48 条 / 11 类，Hit@5 100%、MRR 0.948，A/B、门禁、LLM 裁判、复盘导出 | 已实现 |
 | 运营自动化 | 3 个定时任务、运行历史、Agent 触发、Excel 导出 | 已实现 |
-| ERP 集成 | 适配层 + Mock ERP，`local / mock / http` 三模式，故障降级并标注来源，只读演示页 | 已实现（模拟数据） |
+| 渠道集成 | Shopee Open API v2 / Shopify Admin API 只读适配层，`local / mock / sandbox / live` 四模式，故障降级并标注来源 | 已实现（默认虚构数据） |
 | 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | 已实现（可选） |
 | 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | 已实现 |
-
-## 界面预览
-
-| 控制台首页 | 智能客服 |
-| --- | --- |
-| ![控制台首页](docs/screenshots/01-home.png) | ![智能客服](docs/screenshots/02-chat.png) |
-
-| 带出处的回答 | 运行监控 |
-| --- | --- |
-| ![带出处的回答](docs/screenshots/03-answer.png) | ![运行监控](docs/screenshots/04-monitor.png) |
-
-| 评测中台 | 知识图谱（Neo4j） |
-| --- | --- |
-| ![评测中台](docs/screenshots/05-eval.png) | ![知识网络](docs/screenshots/06-wiki.png) |
-
-| 运营自动化 | ERP 集成（适配层 + Mock ERP） |
-| --- | --- |
-| ![运营自动化](docs/screenshots/08-automation.png) | ![ERP 集成](docs/screenshots/07-erp.png) |
-
-> 截图来自本机演示环境，数据均为虚构。Neo4j 没有独立页面，图谱数据通过「知识网络」页的实体页、出边 / 入边与关系路径展示。
 
 ## 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
 
@@ -51,7 +31,7 @@
 1. **路由**：先判断「查知识 / 调工具 / 直接答」，再决定是否进入工具循环。
 2. **RAG 混合检索**：PDF / DOCX / XLSX / Markdown 统一解析 → 父子切片（子块召回、父块回溯）→ pgvector（1024 维 HNSW）+ 中文 BM25 双路召回 → RRF 融合 → bge-reranker 精排。
 3. **Neo4j 关系扩展**：实体页命中后到 Neo4j 沿 `RELATED` 做 2 跳扩展，`shortestPath` 解释两个实体为什么相关，扩展到的原文章节作为额外候选回到同一次 rerank；图库不可用时回落 pg 副本。
-4. **Function Calling 工具调用**：8 个业务工具（商品检索与详情、订单、ERP 实时库存、政策、优惠券、工单、自动化触发）由模型按语义自主调用，回答前先拿到真实数据。
+4. **Function Calling 工具调用**：9 个业务工具（商品检索与详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发）由模型按语义自主调用，回答前先拿到真实数据。
 5. **HITL 写操作审批**：`interrupt()` 暂停图，前端弹出审批卡片，批准后 `resume` 继续，SSE 不断流；工具按参数幂等，重试不会重复建单。
 6. **出处与回放**：回答标注文档 / 编号 / 版本 / 章节 / 页码；`chat_trace` 落库，可回放整轮的工具调用与降级原因。
 7. **降级与自动化**：模型 429 时熔断 300 秒、降级 BM25 并在前端标注；APScheduler 调度 `kb_sync`、`nightly_eval`、`stale_ticket_scan` 三个定时任务，也可由 Agent 触发。
@@ -104,7 +84,7 @@ $env:PYTHONPATH="."; python scripts/seed_eval.py --run
 2. **只会说话不会办事**：查订单、查物流、建工单这类动作，纯 RAG 做不到；
 3. **不可控**：写操作（建工单、退款）直接执行，出问题没人兜底。
 
-AnswerY 针对这三点做了完整闭环：**引用到章节与页码 → 工具调用 → 写操作人工审批 → 全链路轨迹可查**。
+AnswerHub 针对这三点做了完整闭环：**引用到章节与页码 → 工具调用 → 写操作人工审批 → 全链路轨迹可查**。
 
 ## 功能一览
 
@@ -119,7 +99,7 @@ AnswerY 针对这三点做了完整闭环：**引用到章节与页码 → 工�
 ### 二、Agent 编排（LangGraph）
 
 - 意图路由：先判断「查知识 / 调工具 / 直答」，再决定是否进工具循环
-- 8 个工具：商品检索、商品详情、ERP 实时库存、订单查询、店铺政策、优惠券、创建升级工单、自动化任务触发
+- 9 个工具：商品检索、商品详情、渠道库存（Shopee / Shopify）、平台订单、本地订单查询、店铺政策、优惠券、创建升级工单、自动化任务触发
 - **实体归一**：问题里的商品名 / 订单号先做一次确定性解析，把真实 `product_id` 写进约束，避免模型瞎猜 ID
 - **Agent workflow**：`route → agent ⇄ tools → approval interrupt → resume` 负责单次会话内的编排；它不是 Temporal / Camunda 那种跨服务、长事务的工作流引擎
 
@@ -196,35 +176,37 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 - **Excel 报表**：`GET /api/admin/automation/export` 用 openpyxl 导出运行明细与各任务最近一次摘要，供周报归档
 - **只读优先**：巡检类任务只统计不写业务表，写操作仍走知识库重建或 Agent 审批链路
 
-### 九、ERP 集成（适配层 + Mock ERP）
+### 九、渠道集成（Shopee + Shopify 只读适配层）
 
-个人开发者拿不到企业生产 ERP，所以这里展示的是**接入能力**而不是「上过生产」：
-把厂商差异收敛到一层适配器，用虚构 Mock ERP 跑通完整调用链，换真实网关只改配置。
+个人开发者没有真实店铺和生产账号，所以这里展示的是**接入能力**而不是「上过生产」：
+把两个平台的差异（签名、Token、分页、限流、状态枚举）收敛到一层适配器，默认用虚构数据跑通完整链路，
+换真实凭证 / development store 只改配置。
 
-- **契约先行**：`integrations/erp/base.py` 用 Protocol 定义 `get_order / get_stock / pull_master_data`，
-  返回结构直接对齐项目已有的订单与库存契约，Agent、前端、评测用例都不感知供应商
-- **映射集中**：SAP OData 的 `d.results`、状态码（S/D/R）、支付枚举、`/Date(...)/` 时间戳
-  全部在 `map_order / map_stock / map_product` 里转换，字段错位只有一个排查点
-- **Mock ERP 可独立运行**：`python -m app.integrations.erp.mock_service` 起在 8010，
-  提供 `GET /odata/Orders('12345')`、`GET /odata/Stock?$filter=Sku eq 'SKU-P1004-42'`，
-  带 Bearer Token 校验；同一份数据也挂在主应用 `/mock-erp` 下，免启动第二个进程
-- **可降级**：`ERP_MODE=local` 完全绕过 ERP 并标注 `source=local`；`mock` 用内置虚构数据；
-  `http` 走真实网关。超时 / 鉴权失败 / 未配置统一抛 `ErpUnavailable`，网关自动回落本地 MySQL，
-  并在响应 `source` 标注 `local-fallback`，不把兜底数据伪装成 ERP 结果
-- **只读演示页**：前端「ERP 集成」页把连接自检（模式 / 适配器 / 探测耗时）、订单与库存查询、
-  商品主数据放在同一屏，每条结果都带来源徽章与降级原因
-- **进入 Agent**：`erp_stock_check` 工具让模型在用户追问实时库存时走适配层，
-  对话工具卡片显示来源（`mock-erp` / `http-erp` / `local-fallback`）
+- **契约先行**：`integrations/channels/base.py` 用 Protocol 定义 `get_order / get_stock / pull_master_data / probe`，
+  返回结构对齐项目已有的订单与库存契约，渠道页、Agent 工具、评测用例都不感知平台差异
+- **Shopee v2 签名**：`sign = HMAC-SHA256(partner_key, partner_id + path + timestamp + access_token + shop_id)`，
+  query 带 `partner_id / timestamp / access_token / shop_id / sign`；沙箱域名 `partner.test-stable.shopeemobile.com`；
+  `/api/v2/auth/access_token/get` 的刷新流程已封装为 `refresh_access_token`（Token 4 小时有效）
+- **Shopify Admin REST**：`X-Shopify-Access-Token`，接口版本固定 `2024-10`（`SHOPIFY_API_VERSION` 可换）；
+  列表接口按 `Link` 响应头翻页，429 读 `Retry-After` 等待重试；订单状态由 `financial_status + fulfillment_status + cancelled_at` 三者合成
+- **映射集中**：Shopee 的 `order_status / item_list / stock_info_v2`、Shopify 的 `line_items / variants`、
+  秒级时间戳与 ISO UTC 时间全部在 `map_order / map_stock / map_product` 里转成东八区展示格式，字段错位只有一个排查点
+- **可降级**：`CHANNEL_MODE=local` 绕过渠道并标注 `source=local`；`mock` 用内置虚构数据（默认，无账号无网络）；
+  `sandbox` / `live` 走真实接口。超时 / 鉴权失败 / 5xx 统一抛 `ChannelUnavailable`，
+  网关自动回落本地 MySQL 并标注 `source=local-fallback`，不把兜底数据伪装成平台结果
+- **只读演示页**：前端「渠道集成」页把两个平台的模式徽章、连通性与探测耗时、订单 / 库存 / 商品查询放在同一屏，
+  每条结果带来源徽章与降级原因，并展示「平台原生 → 内部字段」的映射表
+- **进入 Agent**：`channel_stock_check(platform, sku)` 与 `channel_order_lookup(platform, order_no)` 两个工具，
+  用户说「在 Shopee / Shopify 下的单」时走适配层；对话工具卡片显示来源（`shopee-mock` / `shopify-live` / `local-fallback`）
 
-诚实话术：这是一个可替换的 ERP 接入层 + 虚构 Mock 服务，跑通了鉴权、字段映射、
-超时降级与 Agent 调用链；接真实系统时替换 `ERP_BASE_URL / ERP_API_TOKEN`，
-补上厂商的分页与时间戳格式即可。
+诚实话术：这是一层可替换的跨境渠道接入层，跑通了 v2 签名、字段映射、分页限流、超时降级与 Agent 调用链；
+Shopee 走沙箱、Shopify 可用免费 development store 做真实只读联调，但都不是生产商户。
 
 ## 架构
 
 ```text
 ┌─────────────── 浏览器（Next.js 14 / React 18） ─────────────────────────────────────────────────────────────────────────────┐
-│ 统一工作台：混合问答 · 审批卡片 · 来源卡片 · 知识库 · 知识网络 · 监控 · 评测 · 自动化 · ERP 集成                            │
+│ 统一工作台：混合问答 · 审批卡片 · 来源卡片 · 知识库 · 知识网络 · 监控 · 评测 · 自动化 · 渠道集成                            │
 └───────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                 │ 同源 /api（rewrites 转发，避免跨域）
 ┌───────────────▼────────────────────────────────────────── FastAPI ──────────────────────────────────────────────────────────┐
@@ -234,7 +216,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 │ 检索层   解析 → 父子切片 → embedding → pgvector + BM25 → RRF → Neo4j 2 跳关系召回 → rerank → 证据链                         │
 │ 知识组织 实体页 / 别名 / wikilink / backlink 存 Neo4j；pgvector 只存切片与向量 → 关系上下文                                 │
 │ 图谱层   Neo4j：实体页与关系边主存 · 2 跳扩展 · 路径解释（不可用时退回 pg 副本）                                            │
-│ 工具层   商品 / 订单 / 政策 / 优惠券 / 工单（Redis 幂等） / 自动化任务触发 / ERP 适配层                                     │
+│ 工具层   商品 / 订单 / 政策 / 优惠券 / 工单（Redis 幂等） / 自动化任务触发 / Shopee · Shopify 渠道适配层                    │
 │ 记账层   chat_history（Token 成本） · chat_trace（执行轨迹）                                                                │
 │ 评测层   eval_case（用例） · eval_run（回归） · eval_result（下钻） · eval_judgment（裁判） · eval_case_review（复盘）      │
 │ 调度层   APScheduler 定时任务（知识库同步 / 夜间回归 / 工单巡检） → automation_runs（运行历史 + 幂等键）                    │
@@ -255,8 +237,8 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 │   ├── app/
 │   │   ├── agent/          # LangGraph 图、工具、提示词
 │   │   ├── rag/            # 解析、切片、embedding、向量库、BM25、Neo4j 图存储、知识图谱关系召回、检索编排
-│   │   ├── routers/        # chat / rag / wiki / admin / eval / automation / auth / tickets / tools / erp
-│   │   ├── integrations/   # ERP 适配层（契约 / 映射 / Mock 服务 / HTTP 客户端）
+│   │   ├── routers/        # chat / rag / wiki / admin / eval / automation / auth / tickets / tools / channels
+│   │   ├── integrations/   # 渠道适配层（Shopee v2 签名 / Shopify Admin / 字段映射 / Mock）
 │   │   ├── services/       # 自动化任务注册表、幂等执行与调度器生命周期
 │   │   ├── evaluation.py   # 评测用例、跑批与指标汇总
 │   │   ├── eval_judge.py   # 生成质量抽样与 LLM 裁判
@@ -268,7 +250,7 @@ curl -X POST http://127.0.0.1:8000/api/sandbox/run \
 │   ├── scripts/            # 冒烟测试、检索评测、评测中台初始化、沙箱验收
 │   └── docker-compose.yml  # MySQL / Redis / pgvector / Neo4j
 ├── frontend/               # Next.js 14 App Router
-│   ├── app/                # 页面：工作台、知识库、知识网络、监控、评测中台、运营自动化、ERP 集成、登录
+│   ├── app/                # 页面：工作台、知识库、知识网络、监控、评测中台、运营自动化、渠道集成、登录
 │   ├── components/         # 对话、消息、审批卡、来源卡、侧栏
 │   └── lib/                # SSE 客户端、鉴权、会话 store
 ├── enterprise_kb/          # 企业制度知识库（11 份虚构文档：手册/报销/采购/安全/合规等）
@@ -325,9 +307,11 @@ Windows 用户也可以直接双击 `start-demo.bat`（需 Node 已在 PATH 中�
 | `PG_DSN` | pgvector 连接串（容器端口 5433） |
 | `NEO4J_URI` / `NEO4J_USER` / `NEO4J_PASSWORD` | 知识图谱连接（容器端口 7687），实体页 / 关系边主存与 2 跳关系扩展 |
 | `HISTORY_ROUNDS` | 携带的历史轮数，默认 3 |
-| `ERP_MODE` | `local` / `mock` / `http`，默认 `mock`（内置虚构 ERP，开箱即用） |
-| `ERP_BASE_URL` / `ERP_API_TOKEN` | 真实 ERP 网关地址与令牌（`ERP_MODE=http` 时必填） |
-| `MOCK_ERP_TOKEN` | Mock ERP 的 Bearer Token，默认 `demo-erp-token` |
+| `CHANNEL_MODE` | `local` / `mock` / `sandbox` / `live`，默认 `mock`（内置虚构数据，无账号无网络） |
+| `SHOPEE_MODE` / `SHOPIFY_MODE` | 单平台模式覆盖，留空跟随 `CHANNEL_MODE` |
+| `SHOPEE_PARTNER_ID` / `SHOPEE_PARTNER_KEY` / `SHOPEE_SHOP_ID` / `SHOPEE_ACCESS_TOKEN` | Shopee v2 签名与 Token（`sandbox` / `live` 时必填） |
+| `SHOPIFY_SHOP_DOMAIN` / `SHOPIFY_ACCESS_TOKEN` | Shopify 店铺域名与 Admin API Token（`live` 时必填） |
+| `SHOPIFY_API_VERSION` | Admin API 版本，默认 `2024-10` |
 
 ## API 概览
 
@@ -346,10 +330,11 @@ Windows 用户也可以直接双击 `start-demo.bat`（需 Node 已在 PATH 中�
 | GET | `/api/admin/automation/runs` | 自动化运行历史，可按任务过滤（admin） |
 | POST | `/api/admin/automation/jobs/{key}/run` | 手动触发一次，命中幂等键时复用已有记录（admin） |
 | GET | `/api/admin/automation/export` | 导出运行历史与任务最近结果 Excel（admin） |
-| GET | `/api/erp/health` | ERP 模式、适配器与连通性自检 |
-| GET | `/api/erp/orders/{order_no}` | 订单优先走 ERP，失败降级本地库（`source` 标注） |
-| GET | `/api/erp/stock/{sku}` | ERP 实时库存，无 ERP 时回落本地 SKU 库存 |
-| GET | `/api/erp/master-data/{entity}` | 拉取商品主数据（`entity=products`） |
+| GET | `/api/channels` | 渠道列表与当前模式 |
+| GET | `/api/channels/{platform}/health` | 渠道模式与连通性自检（`platform` = shopee / shopify） |
+| GET | `/api/channels/{platform}/orders/{order_no}` | 订单优先走渠道，失败降级本地库（`source` 标注） |
+| GET | `/api/channels/{platform}/stock/{sku}` | 渠道实时库存，未命中时回落本地 SKU 库存 |
+| GET | `/api/channels/{platform}/products` | 拉取商品主数据（Shopee item / Shopify product） |
 | POST | `/api/sandbox/run` | 在隔离容器里执行一段 Python/Node 代码（登录可见） |
 | GET | `/api/sandbox/status` | 沙箱镜像、限制与预热池状态 |
 | GET | `/api/admin/overview` `/monitor` `/services` | 概览、监控、依赖健康（admin） |

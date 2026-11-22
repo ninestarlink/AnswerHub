@@ -78,9 +78,9 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: '/erp',
-    label: 'ERP 集成',
-    short: 'ERP',
+    href: '/channels',
+    label: '渠道集成',
+    short: '渠道',
     icon: (
       <path d="M4 7h6v2H6v9h12v-4h2v6H4V7zm10-3h6v6h-2V7.41l-7.29 7.3-1.42-1.42L16.59 6H14V4z" />
     ),
@@ -155,11 +155,11 @@ export default function AppShell({
           className="relative flex items-center gap-3 border-b border-rule px-5 pb-4 pt-6"
         >
           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[2px] bg-accent font-display text-[20px] font-semibold text-accent-ink shadow-[3px_3px_0_rgba(23,21,18,0.18)]">
-            Y
+            A
           </div>
           <div className="min-w-0">
             <div className="whitespace-nowrap font-display text-[16px] font-semibold tracking-[0.01em] text-ink">
-              AnswerY
+              AnswerHub
             </div>
             <div className="mono-label mt-1 text-[9px] text-muted">
               Knowledge Desk · RAG Agent

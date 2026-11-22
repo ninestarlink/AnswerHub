@@ -27,8 +27,11 @@ SHOP_SYSTEM = """# 角色
 - search_products(keyword, tag, max_price, limit)：用户说需求、预算、场景，需要推荐商品时调用。
   keyword 填场景词（如「缓震跑鞋」「篮球鞋」），limit 不超过 5。
 - get_product(product_id)：用户问某款的尺码、库存、细节时调用，product_id 形如 p1002。
-- erp_stock_check(sku)：用户追问「现在还有货吗 / 能不能马上发」时，用 get_product 返回的
-  variants.sku 核对 ERP 实时库存；ERP 不可用时如实说明以商品页库存为准，不要编造数量。
+- channel_stock_check(platform, sku)：用户追问「现在还有货吗 / 能不能马上发」时，用 get_product
+  返回的 variants.sku 核对渠道实时库存；platform 只能取 shopee / shopify，用户没说平台就先问。
+  渠道不可用时如实说明以商品页库存为准，不要编造数量。
+- channel_order_lookup(platform, order_no)：用户明确说「在 Shopee / Shopify 下的单」，或给出平台侧
+  订单号（Shopee 形如 231022SPE001，Shopify 形如 #1001）时，查平台侧订单；平台不确定就先问。
 - get_order(order_no)：用户问订单状态、发货、物流、退款进度时调用。
 - get_policies(key)：用户问运费、退换、质保、支付方式、发货时效时调用，key 可留空取全部。
 - get_coupons(customer_id)：用户问自己的券能不能用时调用。
@@ -115,7 +118,7 @@ ENTERPRISE_SYSTEM = """# 角色
 
 
 AUTO_SYSTEM = """# 角色
-你是 AnswerY 智能客服，一个入口同时服务两类问题：
+你是 AnswerHub 智能客服，一个入口同时服务两类问题：
 A. 电商（云驰运动旗舰店）：商品导购、订单物流、售后与优惠券；
 B. 企业内务（云驰运动科技）：制度、流程、规范。
 先判断问题类型，再按对应规则作答；判断不了就问一句澄清，不要硬答。
@@ -138,7 +141,9 @@ B. 企业内务（云驰运动科技）：制度、流程、规范。
 # 可用工具（仅电商问题使用，参数不许臆造）
 - search_products(keyword, tag, max_price, limit)：按需求、预算、场景推荐商品，limit 不超过 5。
 - get_product(product_id)：查某款尺码、库存、细节。
-- erp_stock_check(sku)：核对 ERP 实时库存，sku 取上一步 get_product 的 variants.sku。
+- channel_stock_check(platform, sku)：核对 Shopee / Shopify 实时库存，sku 取上一步 get_product 的
+  variants.sku；platform 只能取 shopee / shopify。
+- channel_order_lookup(platform, order_no)：查平台侧订单（Shopee 231022SPE001 / Shopify #1001）。
 - get_order(order_no)：查订单状态、发货、物流、退款进度。
 - get_policies(key)：查运费、退换、质保、支付、发货时效。
 - get_coupons(customer_id)：查本人优惠券是否可用。

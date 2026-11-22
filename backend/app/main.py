@@ -14,7 +14,6 @@ from sqlalchemy import text
 
 from .config import settings
 from .database import SessionLocal, engine, get_redis
-from .integrations.erp.mock_service import mock_erp_app
 from .rag import store as rag_store
 from .rag import wiki as wiki_store
 from .rag import graph_store
@@ -22,8 +21,8 @@ from .routers import (
     admin,
     auth,
     automation as automation_router,
+    channels,
     chat,
-    erp,
     eval,
     rag,
     sandbox,
@@ -91,7 +90,12 @@ async def lifespan(app: FastAPI):
     # 自动化：建表 + 注册定时任务；MySQL 不可用时只打日志，不阻断启动
     await automation_service.start()
 
-    logger.info("ERP 适配层：ERP_MODE=%s", settings.erp_mode)
+    logger.info(
+        "渠道适配层：CHANNEL_MODE=%s（Shopee=%s / Shopify=%s）",
+        settings.channel_mode,
+        settings.shopee_mode or "跟随",
+        settings.shopify_mode or "跟随",
+    )
 
     # 关系索引为空时后台建一次：不阻塞启动，失败也不影响 RAG 主链路
     if settings.wiki_enabled:
@@ -126,11 +130,7 @@ app.include_router(eval.router)
 app.include_router(wiki_router.router)
 app.include_router(sandbox.router)
 app.include_router(automation_router.router)
-app.include_router(erp.router)
-
-# Mock ERP 挂在主应用下：免起第二个进程也能直接查看 OData 接口。
-# 接真实 ERP 时删掉这行挂载即可，业务链路不受影响。
-app.mount("/mock-erp", mock_erp_app)
+app.include_router(channels.router)
 
 
 @app.get("/health", tags=["system"])

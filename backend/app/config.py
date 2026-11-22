@@ -118,14 +118,26 @@ class Settings(BaseSettings):
     # 单个账号 10 分钟内最多执行次数
     sandbox_quota: int = 20
 
-    # ---------- ERP 集成（适配层 + Mock ERP） ----------
-    # erp_mode: local（只查本地库）/ mock（内置虚构 ERP，默认开箱即用）/ http（真实网关）
-    erp_mode: str = "mock"
-    erp_base_url: str = ""
-    erp_api_token: str = ""
-    erp_timeout: float = 5.0
-    # Mock ERP 服务的 Bearer Token，独立进程与主应用挂载共用
-    mock_erp_token: str = "demo-erp-token"
+    # ---------- 渠道集成（Shopee / Shopify 只读适配层） ----------
+    # channel_mode: local（只查本地库）/ mock（内置虚构数据，默认开箱即用）
+    #               sandbox（Shopee 沙箱）/ live（平台生产环境，需要真实 Token）
+    channel_mode: str = "mock"
+    channel_timeout: float = 8.0
+
+    # 单平台覆盖：留空则跟随 channel_mode
+    shopee_mode: str = ""
+    shopee_partner_id: str = ""
+    shopee_partner_key: str = ""
+    shopee_shop_id: str = ""
+    shopee_access_token: str = ""
+    # 留空时按 mode 自动选沙箱 / 生产域名
+    shopee_base_url: str = ""
+
+    shopify_mode: str = ""
+    # 形如 yunchi-demo.myshopify.com，不要带 https://
+    shopify_shop_domain: str = ""
+    shopify_access_token: str = ""
+    shopify_api_version: str = "2024-10"
 
     # ---------- 网页抓取 ----------
     # 已移除网页抓取 / 比价 / 多模态等小工具，项目聚焦电商客服与企业知识库

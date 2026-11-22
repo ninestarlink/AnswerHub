@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <div className="masthead flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-2.5 pt-2.5">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="font-display text-[22px] font-semibold leading-none tracking-[0.02em] text-ink">
-                AnswerY
+                AnswerHub
               </span>
               <span className="mono-label text-muted">自建知识库 · 智能客服中台</span>
             </div>
@@ -384,7 +384,7 @@ export default function DashboardPage() {
 
         <footer className="mt-8 flex items-center justify-center gap-2 pb-4 text-[11.5px] text-slate-500">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          AnswerY智能客服中台 · React + FastAPI + LangGraph + pgvector · 所有数据均为演示虚构
+          AnswerHub 智能客服中台 · React + FastAPI + LangGraph + pgvector · 所有数据均为演示虚构
         </footer>
       </div>
     </AppShell>

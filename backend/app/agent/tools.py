@@ -16,7 +16,7 @@ from fastapi import HTTPException
 from langchain_core.tools import tool
 
 from ..database import SessionLocal, get_redis
-from ..integrations.erp import get_erp_adapter, normalize_sku
+from ..integrations.channels import get_channel, normalize_sku
 from ..models import Ticket
 from ..routers.tickets import _next_ticket_no
 from ..routers.tools import (
@@ -86,26 +86,59 @@ async def get_product(product_id: str) -> tuple[str, dict]:
         return _error(exc)
 
 
-@tool("erp_stock_check", response_format="content_and_artifact")
-async def erp_stock_check(sku: str) -> tuple[str, dict]:
-    """查询 ERP 实时可用库存。sku 可传 SKU-P1004-42，也可传 variant_id（如 p1004-42）。"""
+@tool("channel_stock_check", response_format="content_and_artifact")
+async def channel_stock_check(platform: str, sku: str) -> tuple[str, dict]:
+    """查询 Shopee / Shopify 渠道实时可售库存。platform 只能取 shopee 或 shopify；
+    sku 可传 SKU-P1004-42，也可传 variant_id（如 p1004-42）。"""
+    key = (platform or "").strip().lower()
+    if key not in ("shopee", "shopify"):
+        return _error(ValueError("platform 只能是 shopee 或 shopify"))
+
     code = normalize_sku(sku)
     if not code:
         return _error(ValueError("sku 不能为空，形如 SKU-P1004-42"))
 
-    adapter = get_erp_adapter()
+    adapter = get_channel(key)
     if adapter is None:
         return _error(
-            ValueError("ERP 未启用（ERP_MODE=local），请改用 get_product 查看尺码库存")
+            ValueError("渠道未启用（CHANNEL_MODE=local），请改用 get_product 查看尺码库存")
         )
 
     try:
         data = await adapter.get_stock(code)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("erp_stock_check 失败：%s", exc)
+        logger.warning("channel_stock_check 失败：%s", exc)
         return _error(exc)
 
-    payload = {**data, "source": adapter.name}
+    payload = {**data, "platform": key, "source": adapter.name}
+    return _dump(payload), payload
+
+
+@tool("channel_order_lookup", response_format="content_and_artifact")
+async def channel_order_lookup(platform: str, order_no: str) -> tuple[str, dict]:
+    """查询 Shopee / Shopify 平台侧订单详情。platform 只能取 shopee 或 shopify；
+    Shopee 订单号形如 231022SPE001，Shopify 订单号形如 #1001。"""
+    key = (platform or "").strip().lower()
+    if key not in ("shopee", "shopify"):
+        return _error(ValueError("platform 只能是 shopee 或 shopify"))
+
+    no = (order_no or "").strip()
+    if not no:
+        return _error(ValueError("order_no 不能为空"))
+
+    adapter = get_channel(key)
+    if adapter is None:
+        return _error(
+            ValueError("渠道未启用（CHANNEL_MODE=local），请改用 get_order 查本地订单")
+        )
+
+    try:
+        data = await adapter.get_order(no)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("channel_order_lookup 失败：%s", exc)
+        return _error(exc)
+
+    payload = {**data, "platform": key, "source": adapter.name}
     return _dump(payload), payload
 
 
@@ -269,7 +302,8 @@ async def trigger_automation_job(job_key: str) -> tuple[str, dict]:
 SHOP_TOOLS = [
     search_products,
     get_product,
-    erp_stock_check,
+    channel_stock_check,
+    channel_order_lookup,
     get_order,
     get_policies,
     get_coupons,

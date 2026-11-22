@@ -317,7 +317,8 @@ def _sources_from_evidence(evidence: list[dict]) -> list[dict]:
 _TOOL_LABELS = {
     "search_products": "商品库 · 商品检索",
     "get_product": "商品库 · 商品详情",
-    "erp_stock_check": "ERP 集成 · 实时库存",
+    "channel_stock_check": "渠道集成 · 实时库存",
+    "channel_order_lookup": "渠道集成 · 平台订单",
     "get_order": "订单库 · 订单查询",
     "get_policies": "政策库 · 店铺政策",
     "get_coupons": "优惠券库 · 优惠查询",
@@ -348,8 +349,8 @@ def _brief_tool_result(data) -> str:
         return f"已触发 {job}（运行 #{data['run_id']}，后台执行中）"
     if data.get("sku") and data.get("available") is not None:
         return (
-            f"ERP 库存 {data['sku']}：可用 {data['available']}"
-            f"（{data.get('warehouse') or 'ERP'}，来源 {data.get('source') or 'erp'}）"
+            f"渠道库存 {data['sku']}：可用 {data['available']}"
+            f"（{data.get('warehouse') or '渠道'}，来源 {data.get('source') or 'channel'}）"
         )
     products = data.get("products")
     if isinstance(products, list):

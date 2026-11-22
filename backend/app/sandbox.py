@@ -113,7 +113,7 @@ def _create_container(lang: str) -> Any:
         user="65534:65534",
         working_dir="/tmp",
         environment={"PYTHONUNBUFFERED": "1", "NODE_NO_WARNINGS": "1"},
-        labels={"app": "answery-sandbox", "runtime": lang},
+        labels={"app": "answerhub-sandbox", "runtime": lang},
     )
     _state[lang].update(state="WARM", container=container.id[:12], last_error=None)
     logger.info("沙箱容器就绪：%s (%s)", lang, container.id[:12])
@@ -158,7 +158,7 @@ def _exec(container: Any, cmd: list[str]) -> tuple[int, bytes]:
 def _cleanup_stale() -> None:
     """启动时清掉上次进程遗留的沙箱容器，避免占内存。"""
     client = _client_or_raise()
-    for container in client.containers.list(all=True, filters={"label": "app=answery-sandbox"}):
+    for container in client.containers.list(all=True, filters={"label": "app=answerhub-sandbox"}):
         try:
             container.remove(force=True)
         except DockerException:

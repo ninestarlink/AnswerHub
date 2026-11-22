@@ -84,7 +84,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
     subtitle = '知识库检索 · 工具调用 · 流式回答',
     placeholder = '问问我：哪款鞋适合跑步？或查询订单物流……',
     quickQuestions = [],
-    emptyTitle = '你好，我是 AnswerY 智能客服',
+    emptyTitle = '你好，我是 AnswerHub 智能客服',
     emptyDesc = '',
     emptyHint = '',
     accent = 'indigo',
@@ -535,7 +535,7 @@ function EmptyState({
       {/* 应用图标式题花：白卡托一枚暖橙字母 */}
       <div className="mx-auto flex flex-col items-center">
         <div className="flex items-center gap-2 text-[11px] tracking-[0.08em] text-muted">
-          AnswerY · 智能客服
+          AnswerHub · 智能客服
         </div>
         <div className="mt-5 flex h-16 w-16 items-center justify-center rounded-[2px] bg-paper-2 shadow-lift">
           <span className="text-[30px] font-semibold leading-none text-accent">A</span>
