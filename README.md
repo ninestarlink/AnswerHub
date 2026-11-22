@@ -1,10 +1,10 @@
 # AnswerHub-AI中台
 
-> AnswerHub-AI中台 是一个 **Function Calling + pgvector 混合检索 + Neo4j 知识图谱 + LangGraph Agent** 的客服中台：**回答带出处、写操作先审批、全过程可回放**，覆盖电商导购与企业制度问答。
+**面向电商与企业内务的 AI 客服中台**：一个输入框同时处理商品导购、订单物流与公司制度问答，回答带章节级出处，写操作先人工审批，全过程可回放。
 
-同一套 Agent 运行时、同一条检索链路、同一套鉴权与监控。工作台只有一个输入框——商品、订单、制度问题都能问，系统按语义判断该查文档还是调工具。
+核心链路：**pgvector + BM25 混合检索 → Neo4j 图谱 2 跳关系召回 → rerank → 章节级引用 → LangGraph Agent 工具调用（9 个）→ HITL 审批 → 轨迹落库**。工程侧包含 SSE 流式对话、JWT + RBAC 鉴权、Shopee / Shopify 渠道适配层与超时降级，并用 **48 条回归评测（Hit@5 100% / MRR 0.948）** 量化检索效果。
 
-现在的主线能力：**混合检索（pgvector + BM25 + RRF）→ Neo4j 图谱关系召回（实体命中 → 2 跳扩展 → 路径解释）→ rerank → 引用到章节页码 → 9 个工具 → 写操作 HITL 审批 → 轨迹落库**；外层配 **48 条回归评测（Hit@5 100% / MRR 0.948）**、**APScheduler 运营自动化** 和 **Shopee / Shopify 渠道适配层（默认 Mock，可切沙盒 / 正式 Token）**。关系召回是一路可关的增强通道：`WIKI_ENABLED=false` 时主链路照常工作，Neo4j 不可用时退回 pg 副本并降级为纯检索。
+> 个人学习项目：店铺、订单、制度数据均为虚构，不涉及真实企业或商户；默认 `CHANNEL_MODE=mock`，无账号、无网络即可跑通全链路。
 
 ![stack](https://img.shields.io/badge/React-18-149ECA) ![stack](https://img.shields.io/badge/Next.js-14-000000) ![stack](https://img.shields.io/badge/FastAPI-0.162-009688) ![stack](https://img.shields.io/badge/LangGraph-1.2-1C3C3C) ![stack](https://img.shields.io/badge/Function%20Calling-1C3C3C) ![stack](https://img.shields.io/badge/HITL-Approval-6E4AFF) ![stack](https://img.shields.io/badge/Shopee%20%2B%20Shopify-Adapter-0B7285) ![stack](https://img.shields.io/badge/pgvector-0.8-336791)
 
