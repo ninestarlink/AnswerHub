@@ -10,6 +10,7 @@ export type ChannelSource =
   | 'shopee-live'
   | 'shopify-mock'
   | 'shopify-live'
+  | 'channel-cache'
   | 'local'
   | 'local-fallback';
 

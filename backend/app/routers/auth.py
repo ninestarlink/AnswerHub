@@ -17,16 +17,22 @@ from ..config import settings
 from ..database import get_db
 from ..models import Customer
 from ..schemas import CustomerOut, LoginRequest, LoginResponse
+from ..tenancy import current_tenant, normalize_tenant
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def create_access_token(customer_id: str, role: str = "customer") -> str:
-    """签发 HS256 Token，角色写进 claims，接口鉴权不用再查库。"""
+def create_access_token(
+    customer_id: str,
+    role: str = "customer",
+    tenant_id: str | None = None,
+) -> str:
+    """签发 HS256 Token，角色与租户写进 claims，接口鉴权不用再查库。"""
     now = int(time.time())
     payload = {
         "sub": customer_id,
         "role": role,
+        "tenant": normalize_tenant(tenant_id or current_tenant()),
         "iat": now,
         "exp": now + settings.jwt_expire_minutes * 60,
     }

@@ -24,6 +24,28 @@ from app.integrations.channels.shopify import (
     map_order as map_shopify_order,
 )
 from app.integrations.channels.shopify.mock import ORDERS as SHOPIFY_ORDERS
+from app.integrations.channels.shopee import client as shopee_client
+from app.integrations.channels.shopify.client import ShopifyClient
+
+
+class PlatformEndpointTest(unittest.TestCase):
+    """锁住接入的是哪套 API，避免把 Shopee / Shopify 的路径写混。"""
+
+    def test_shopee_open_api_v2_paths(self):
+        self.assertEqual(shopee_client._PATH_ORDER, "/api/v2/order/get_order_detail")
+        self.assertEqual(shopee_client._PATH_ITEM_LIST, "/api/v2/product/get_item_list")
+        self.assertEqual(shopee_client._PATH_ITEM_BASE, "/api/v2/product/get_item_base_info")
+        self.assertEqual(shopee_client._PATH_MODELS, "/api/v2/product/get_model_list")
+        self.assertEqual(shopee_client._PATH_SHOP, "/api/v2/shop/get_shop_info")
+
+    def test_shopify_admin_rest_version(self):
+        client = ShopifyClient(
+            shop_domain="demo-store.myshopify.com",
+            access_token="token",
+            api_version="2024-10",
+        )
+        self.assertEqual(client.base_url, "https://demo-store.myshopify.com")
+        self.assertEqual(client.admin_path, "/admin/api/2024-10")
 
 
 class ShopeeSignatureTest(unittest.TestCase):

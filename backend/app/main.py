@@ -31,6 +31,8 @@ from .routers import (
     wiki as wiki_router,
 )
 from .services import automation as automation_service
+from .services import channel_store
+from .tenancy import install_tenant_events, reset_tenant, set_tenant, tenant_from_request
 from . import sandbox as sandbox_service
 
 logging.basicConfig(
@@ -38,6 +40,9 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
 )
 logger = logging.getLogger("app")
+
+# 全局租户过滤/写入事件：必须在模型导入之后注册
+install_tenant_events()
 
 
 @asynccontextmanager
@@ -53,6 +58,11 @@ async def lifespan(app: FastAPI):
         )
     except Exception as exc:
         logger.warning("MySQL 暂不可用（%s），请先执行 docker compose up -d", exc)
+
+    try:
+        await channel_store.ensure_tables()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("channel_snapshots 建表失败（%s），渠道快照降级不可用", exc)
 
     try:
         await get_redis().ping()
@@ -119,6 +129,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def tenant_middleware(request, call_next):
+    """每个请求解析一次租户，写入 ContextVar；响应结束后恢复，避免串请求。"""
+    token = set_tenant(
+        tenant_from_request(
+            request.headers.get("authorization"),
+            request.headers.get("x-tenant-id"),
+        )
+    )
+    try:
+        return await call_next(request)
+    finally:
+        reset_tenant(token)
+
 
 app.include_router(auth.router)
 app.include_router(chat.router)

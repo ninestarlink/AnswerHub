@@ -17,11 +17,13 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
+from .tenancy import TenantScoped
 
 
 class Product(Base):
@@ -363,4 +365,34 @@ class Ticket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ChannelSnapshot(TenantScoped, Base):
+    """渠道只读结果的最近一次快照：按租户 + 平台 + 实体 + 外部 ID 唯一。
+
+    只存平台返回的原始统一结构，不做订单/商品的正规化拆表；
+    作用是渠道故障时能先回放最近一次成功结果，再决定是否回落本地库。
+    """
+
+    __tablename__ = "channel_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    platform: Mapped[str] = mapped_column(String(16), index=True)
+    # order / stock / product
+    entity: Mapped[str] = mapped_column(String(16), index=True)
+    external_id: Mapped[str] = mapped_column(String(64), index=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "platform",
+            "entity",
+            "external_id",
+            name="uq_channel_snapshot",
+        ),
     )

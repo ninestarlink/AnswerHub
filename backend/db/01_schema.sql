@@ -360,4 +360,20 @@ CREATE TABLE automation_runs (
   KEY idx_automation_runs_started (started_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='自动化任务执行历史';
 
+-- -------------------------------------------------------------
+-- 渠道快照：按租户 + 平台 + 实体 + 外部 ID 覆盖写，用于故障回放
+-- -------------------------------------------------------------
+CREATE TABLE channel_snapshots (
+  id          INT          NOT NULL AUTO_INCREMENT,
+  tenant_id   VARCHAR(32)  NOT NULL DEFAULT 'demo' COMMENT '行级租户标识',
+  platform    VARCHAR(16)  NOT NULL COMMENT 'shopee / shopify',
+  entity      VARCHAR(16)  NOT NULL COMMENT 'order / stock / product',
+  external_id VARCHAR(64)  NOT NULL COMMENT '订单号 / SKU / 商品 ID',
+  payload     JSON         NOT NULL COMMENT '平台统一结构快照',
+  fetched_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_channel_snapshot (tenant_id, platform, entity, external_id),
+  KEY idx_channel_snapshot_lookup (tenant_id, platform, entity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='渠道只读结果快照';
+
 SET FOREIGN_KEY_CHECKS = 1;

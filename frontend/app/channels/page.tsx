@@ -26,6 +26,7 @@ const SOURCE_STYLE: Record<ChannelSource, { label: string; className: string }> 
   'shopee-live': { label: 'Shopee Live', className: 'bg-emerald-50 text-emerald-600' },
   'shopify-mock': { label: 'Shopify Mock', className: 'bg-indigo-50 text-indigo-600' },
   'shopify-live': { label: 'Shopify Live', className: 'bg-emerald-50 text-emerald-600' },
+  'channel-cache': { label: '渠道快照 · 已回放', className: 'bg-sky-50 text-sky-700' },
   local: { label: '本地库', className: 'bg-slate-100 text-slate-600' },
   'local-fallback': { label: '渠道故障 · 已降级', className: 'bg-amber-50 text-amber-600' },
 };
@@ -498,7 +499,8 @@ export default function ChannelsPage() {
                 </li>
               </ul>
               <p className="mt-2.5 border-t border-rule pt-2 text-[11.5px] leading-relaxed text-slate-400">
-                渠道失败时自动回落本地 MySQL，响应 source 标注 local-fallback，不把兜底数据伪装成平台结果。
+                渠道成功结果按租户写入 channel_snapshots；失败时先回放最近快照（channel-cache），
+                再回落本地 MySQL（local-fallback），不把兜底数据伪装成平台结果。
               </p>
             </section>
           </div>

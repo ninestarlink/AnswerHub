@@ -19,10 +19,12 @@ class Settings(BaseSettings):
     )
 
     # ---------- 应用 ----------
-    app_name: str = "企业级 AI 客服 Agent 平台"
+    app_name: str = "AnswerHub-AI中台"
     app_env: str = "dev"
     secret_key: str = "demo-secret-change-me"
     jwt_expire_minutes: int = 24 * 60
+    # 行级租户隔离：未登录 / Token 未带租户时使用该默认租户
+    default_tenant: str = "demo"
     # 演示账号统一密码（生产环境应改为数据库 password_hash + bcrypt 校验）
     demo_password: str = "demo1234"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
