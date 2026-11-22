@@ -44,7 +44,7 @@ export const APPS: AppDef[] = [
     id: 'enterprise-rag',
     name: '企业制度知识库',
     en: 'Enterprise Policy KB',
-    desc: '员工手册、差旅报销、采购、信息安全、客服 SOP 等 11 份制度文档。自建 RAG 全链路，回答标注依据、版本与生效状态。',
+    desc: '员工手册、差旅报销、采购、信息安全、客服 SOP 等 11 份制度文档。RAG 全链路，回答标注依据、版本与生效状态。',
     tags: ['pgvector', 'Hybrid Search', 'Citation'],
     status: 'running',
     href: '/apps?kb=enterprise',

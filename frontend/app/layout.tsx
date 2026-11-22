@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'AnswerHub-AI中台',
   description:
-    'AnswerHub-AI中台：一套知识库驱动的客服系统，同时支撑电商导购与企业制度问答。React + FastAPI + LangGraph + pgvector 自建 RAG，含工具调用、人工审批、对话轨迹与运行监控。',
+    'AnswerHub-AI中台：一套知识库驱动的客服系统，同时支撑电商导购与企业制度问答。React + FastAPI + LangGraph + pgvector RAG，含工具调用、人工审批、对话轨迹与运行监控。',
 };
 
 export default function RootLayout({
