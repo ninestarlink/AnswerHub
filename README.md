@@ -33,6 +33,20 @@
 | 🧪 代码沙箱 | Docker 隔离执行 Python / Node，禁网、只读、超时重建 | ✅ 已实现（可选） |
 | 🛡️ 可观测与安全 | `chat_trace`、JWT + RBAC、工具幂等、会话与全站额度 | ✅ 已实现 |
 
+## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
+
+从输入框到带出处的答案，一次请求会走完 7 个环节，覆盖 **RAG 混合检索、Neo4j 图谱关系扩展、Function Calling 工具调用、HITL 审批与运营自动化**。检索是主干，图谱与工具是两条增强，任一环节降级都不影响主链路返回：
+
+1. **路由**：先判断「查知识 / 调工具 / 直接答」，再决定是否进入工具循环。
+2. **RAG 混合检索**：PDF / DOCX / XLSX / Markdown 统一解析 → 父子切片（子块召回、父块回溯）→ pgvector（1024 维 HNSW）+ 中文 BM25 双路召回 → RRF 融合 → bge-reranker 精排。
+3. **Neo4j 关系扩展**：实体页命中后到 Neo4j 沿 `RELATED` 做 2 跳扩展，`shortestPath` 解释两个实体为什么相关，扩展到的原文章节作为额外候选回到同一次 rerank；图库不可用时回落 pg 副本。
+4. **Function Calling 工具调用**：9 个业务工具（商品检索与详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发）由模型按语义自主调用，回答前先拿到真实数据。
+5. **HITL 写操作审批**：`interrupt()` 暂停图，前端弹出审批卡片，批准后 `resume` 继续，SSE 不断流；工具按参数幂等，重试不会重复建单。
+6. **出处与回放**：回答标注文档 / 编号 / 版本 / 章节 / 页码；`chat_trace` 落库，可回放整轮的工具调用与降级原因。
+7. **降级与自动化**：模型 429 时熔断 300 秒、降级 BM25 并在前端标注；APScheduler 调度 `kb_sync`、`nightly_eval`、`stale_ticket_scan` 三个定时任务，也可由 Agent 触发。
+
+> 关系扩展是可选增强：`WIKI_ENABLED=false` 时，向量 + BM25 + RRF + rerank 照常工作；Neo4j 不可用时自动回落 pg 副本。前端「知识网络」页用于观察实体页、出边 / 入边与两跳路径，不影响对话入口。
+
 ## 🛒 电商平台接入经验（Shopee + Shopify）
 
 两个平台落在同一套 `ChannelAdapter` 契约上，业务细节按平台分别处理：
@@ -49,20 +63,6 @@
 - **场景落地**：同一层适配器同时服务 `/api/channels/*` 接口、前端「渠道集成」页与 Agent 工具（`channel_stock_check` / `channel_order_lookup`），页面和工具卡片都显示 `source` 与降级原因。
 - **验证方式**：`tests/test_channels.py` 覆盖 v2 签名固定向量、订单 / 库存映射、Shopify 状态组合与时区换算；`tests/test_tenancy.py` 覆盖跨租户不可见、自动补 `tenant_id` 与显式跨租户查询。
 - **联调边界**：Shopify 基于 development store 完成真实接口联调；Shopee 使用沙箱与完整签名链路验证。
-
-## 🧠 核心链路：RAG 检索 → Neo4j 扩展 → 工具调用 → 自动化
-
-从输入框到带出处的答案，一次请求会走完 7 个环节，覆盖 **RAG 混合检索、Neo4j 图谱关系扩展、Function Calling 工具调用、HITL 审批与运营自动化**。检索是主干，图谱与工具是两条增强，任一环节降级都不影响主链路返回：
-
-1. **路由**：先判断「查知识 / 调工具 / 直接答」，再决定是否进入工具循环。
-2. **RAG 混合检索**：PDF / DOCX / XLSX / Markdown 统一解析 → 父子切片（子块召回、父块回溯）→ pgvector（1024 维 HNSW）+ 中文 BM25 双路召回 → RRF 融合 → bge-reranker 精排。
-3. **Neo4j 关系扩展**：实体页命中后到 Neo4j 沿 `RELATED` 做 2 跳扩展，`shortestPath` 解释两个实体为什么相关，扩展到的原文章节作为额外候选回到同一次 rerank；图库不可用时回落 pg 副本。
-4. **Function Calling 工具调用**：9 个业务工具（商品检索与详情、Shopee / Shopify 渠道库存与平台订单、本地订单、政策、优惠券、工单、自动化触发）由模型按语义自主调用，回答前先拿到真实数据。
-5. **HITL 写操作审批**：`interrupt()` 暂停图，前端弹出审批卡片，批准后 `resume` 继续，SSE 不断流；工具按参数幂等，重试不会重复建单。
-6. **出处与回放**：回答标注文档 / 编号 / 版本 / 章节 / 页码；`chat_trace` 落库，可回放整轮的工具调用与降级原因。
-7. **降级与自动化**：模型 429 时熔断 300 秒、降级 BM25 并在前端标注；APScheduler 调度 `kb_sync`、`nightly_eval`、`stale_ticket_scan` 三个定时任务，也可由 Agent 触发。
-
-> 关系扩展是可选增强：`WIKI_ENABLED=false` 时，向量 + BM25 + RRF + rerank 照常工作；Neo4j 不可用时自动回落 pg 副本。前端「知识网络」页用于观察实体页、出边 / 入边与两跳路径，不影响对话入口。
 
 ## 📊 评测中台：让「回答变好」有数字依据
 
